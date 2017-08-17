@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 
 IMAGE_DIR = '/local/mnt/workspace/chris/Databases/UMDFaces/umdfaces_batch2'
-ANNO_DIR ='/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/Annotations_w_bg'
+ANNO_DIR ='/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/Annotations_landmarks_9'
 
 if __name__ == '__main__':
 
@@ -47,6 +47,16 @@ if __name__ == '__main__':
                     raise ValueError
                 rect = patches.Rectangle((x,y),w,h,linewidth=1,edgecolor=color,facecolor='none')
                 ax.add_patch(rect)
+
+                landmarks = obj.find('landmarks')
+                l_x = []
+                l_y = []
+                # for i in [7,10,12,14,16,17,18,19,20]:
+                for i in range(9):
+                    l_x.append(float(landmarks.find('l'+str(i)).find('x').text))
+                    l_y.append(float(landmarks.find('l'+str(i)).find('y').text))
+
+                ax.plot(l_x,l_y,'ro')
             plt.show(block=False)
             raw_input('Press enter to continue...')
             plt.close()

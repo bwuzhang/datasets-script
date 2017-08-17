@@ -17,7 +17,7 @@ r"""Convert umdfaces dataset to TFRecord for object_detection.
 
 Example usage:
 python create_umd_tf_record.py --data_dir=../../UMDFaces/VOC_format/ \
-    --set=train --annotation_dir=Annotations_w_bg --output_path=umd_train.record
+    --set=train --annotations_dir=Annotations --output_path=umd_train.record
 
 """
 from __future__ import absolute_import
@@ -79,7 +79,7 @@ def dict_to_tf_example(data,
   Raises:
     ValueError: if the image pointed to by data['filename'] is not a valid JPEG
   """
-  img_path = os.path.join(data['folder'], image_subdirectory, data['filename'])
+  img_path = os.path.join(image_subdirectory, data['folder'], data['filename'])
   full_path = os.path.join(dataset_directory, img_path)
   with tf.gfile.GFile(full_path) as fid:
     encoded_jpg = fid.read()
@@ -96,6 +96,10 @@ def dict_to_tf_example(data,
   ymin = []
   xmax = []
   ymax = []
+
+  landmarks = []
+  visibilities =[]
+
   classes = []
   classes_text = []
   truncated = []
@@ -112,6 +116,22 @@ def dict_to_tf_example(data,
     ymin.append(float(obj['bndbox']['ymin']) / height)
     xmax.append(float(obj['bndbox']['xmax']) / width)
     ymax.append(float(obj['bndbox']['ymax']) / height)
+
+    print("Annotations including landmarks...")
+    landmark = ""
+    visibility = ""
+    # for i in range(21):
+    for i in range(9):
+      landmark += str(float(obj['landmarks']['l'+str(i)]['x']) / width)
+      landmark += " "
+      landmark += str(float(obj['landmarks']['l'+str(i)]['y']) / height)
+      landmark += " "
+      visibility += obj['landmarks']['l'+str(i)]['vis']
+      visibility += " "
+
+    landmarks.append(landmark)
+    visibilities.append(visibility)
+
     classes_text.append(obj['name'])
     classes.append(label_map_dict[obj['name']])
     truncated.append(int(obj['truncated']))
@@ -134,6 +154,10 @@ def dict_to_tf_example(data,
       'image/object/difficult': dataset_util.int64_list_feature(difficult_obj),
       'image/object/truncated': dataset_util.int64_list_feature(truncated),
       'image/object/view': dataset_util.bytes_list_feature(poses),
+
+      'image/object/landmarks': dataset_util.bytes_list_feature(landmarks),
+      'image/object/visbilities': dataset_util.bytes_list_feature(visibilities),
+      
   }))
   return example
 
@@ -152,6 +176,8 @@ def main(_):
   for idx, example in enumerate(examples_list):
       if idx % 100 == 0:
           logging.info('On image %d of %d', idx, len(examples_list))
+      if idx % 1000 == 0:
+        print("Working on #{}/{} image".format(idx,len(examples_list)))
       path = os.path.join(annotations_dir, example + '.xml')
       with tf.gfile.GFile(path, 'r') as fid:
           xml_str = fid.read()

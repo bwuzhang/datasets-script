@@ -9,9 +9,9 @@ import random
 FILEDIR = "/local/mnt/workspace/chris/Databases/UMDFaces/umdfaces_batch2/"
 IMGSTORE = "/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/JPEGImages/"
 FILENAME = "umdfaces_batch2_ultraface.csv"
-ANNOTATIONDIR = "/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/Annotations_w_bg/"
+ANNOTATIONDIR = "/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/Annotations_landmarks_9/"
 
-GENERATE_BACKGROUND = True
+GENERATE_BACKGROUND = False
 BACKGROUND_PERCENT = 1.0  #background/faces ratio.
 
 def loadCSVFile(file_name):
@@ -56,6 +56,7 @@ def createXML(trans,store_path):
     truncated.text = "0"
     difficult = etree.SubElement(_object, "difficult")
     difficult.text = "0"
+
     bndbox = etree.SubElement(_object, "bndbox")
     xmin = etree.SubElement(bndbox, "xmin")
     xmin.text = trans['xmin']
@@ -65,6 +66,20 @@ def createXML(trans,store_path):
     xmax.text = trans['xmax']
     ymax = etree.SubElement(bndbox, "ymax")
     ymax.text = trans['ymax']
+
+    landmarks = etree.SubElement(_object,'landmarks')
+    d = {}
+    # for i in range(21):
+    for i in range(9):
+        d["l{}".format(i)] = etree.SubElement(landmarks,"l{}".format(i))
+
+        d["l{}x".format(i)] = etree.SubElement(d["l{}".format(i)],"x".format(i))
+        d["l{}x".format(i)].text = trans['l'+str(i)+'x']
+        d["l{}y".format(i)] = etree.SubElement(d["l{}".format(i)],"y".format(i))
+        d["l{}y".format(i)].text = trans['l'+str(i)+'y']
+        d["l{}v".format(i)] = etree.SubElement(d["l{}".format(i)],"vis".format(i))
+        d["l{}v".format(i)].text = trans['l'+str(i)+'v']
+
     if GENERATE_BACKGROUND:
         _object_b = etree.SubElement(annotation, "object")
         name_b = etree.SubElement(_object_b, "name")
@@ -92,7 +107,8 @@ def createXML(trans,store_path):
 if __name__ == "__main__":
     random.seed(0)
     csv_content = loadCSVFile(FILEDIR+FILENAME)
-    cvs_content_part = csv_content[1:,1:10]
+    #cvs_content_part = csv_content[1:,1:10]
+    cvs_content_part = csv_content[1:,1:74]
     i=1
     if GENERATE_BACKGROUND:
         print "Annotation includes random background..."
@@ -104,10 +120,10 @@ if __name__ == "__main__":
         img = Image.open(FILEDIR+jpg_path)
         width, height = img.size
 
-        xmin = int(float(info[3]))
-        ymin = int(float(info[4]))
-        xmax = int(float(info[3])+float(info[5]))
-        ymax = int(float(info[4])+float(info[6]))
+        xmin = float(info[3])
+        ymin = float(info[4])
+        xmax = float(info[3])+float(info[5])
+        ymax = float(info[4])+float(info[6])
 
         transf = dict()
         transf['folder'] = jpg_path.split('/')[0]
@@ -119,6 +135,13 @@ if __name__ == "__main__":
         transf['ymin'] = str(ymin)
         transf['xmax'] = str(xmax)
         transf['ymax'] = str(ymax)
+
+        #Read landmarks
+        # for i in range(21):
+        for i, j in enumerate([7,10,12,14,16,17,18,19,20]):
+            transf['l'+str(i)+'x'] = str(float(info[j*3+10]))
+            transf['l'+str(i)+'y'] = str(float(info[j*3+11]))
+            transf['l'+str(i)+'v'] = str(float(info[j*3+12]))
 
         while GENERATE_BACKGROUND:
             x1 = random.randint(0,width-1)
