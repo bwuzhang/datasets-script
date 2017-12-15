@@ -11,8 +11,8 @@ IMGSTORE = "/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/JPEGImages/
 FILENAME = "umdfaces_batch2_ultraface.csv"
 ANNOTATIONDIR = "/local/mnt/workspace/chris/Databases/UMDFaces/VOC_format/Annotations_landmarks_9/"
 
-GENERATE_BACKGROUND = False
-BACKGROUND_PERCENT = 1.0  #background/faces ratio.
+
+landmark_dic = {'7':'0', '14':'1', '10':'2', '17':'3', '18':'4', '19':'5', '12':'6', '20':'7', '16':'8'}
 
 def loadCSVFile(file_name):
     file_content = np.loadtxt(file_name, dtype=np.str, delimiter=",")
@@ -80,26 +80,6 @@ def createXML(trans,store_path):
         d["l{}v".format(i)] = etree.SubElement(d["l{}".format(i)],"vis".format(i))
         d["l{}v".format(i)].text = trans['l'+str(i)+'v']
 
-    if GENERATE_BACKGROUND:
-        _object_b = etree.SubElement(annotation, "object")
-        name_b = etree.SubElement(_object_b, "name")
-        name_b.text = "background"
-        pose_b = etree.SubElement(_object_b, "pose")
-        pose_b.text = "Unspecified"
-        truncated_b = etree.SubElement(_object_b, "truncated")
-        truncated_b.text = "0"
-        difficult_b = etree.SubElement(_object_b, "difficult")
-        difficult_b.text = "0"
-        bndbox_b = etree.SubElement(_object_b, "bndbox")
-        xmin_b = etree.SubElement(bndbox_b, "xmin")
-        xmin_b.text = trans['xmin_b']
-        ymin_b = etree.SubElement(bndbox_b, "ymin")
-        ymin_b.text = trans['ymin_b']
-        xmax_b = etree.SubElement(bndbox_b, "xmax")
-        xmax_b.text = trans['xmax_b']
-        ymax_b = etree.SubElement(bndbox_b, "ymax")
-        ymax_b.text = trans['ymax_b']
-
     tree = etree.ElementTree(annotation)
     file_name = trans['filename'].split('.')[0]+'.xml'
     tree.write(store_path+file_name, pretty_print=True, xml_declaration=True, encoding='UTF-8')
@@ -110,9 +90,7 @@ if __name__ == "__main__":
     #cvs_content_part = csv_content[1:,1:10]
     cvs_content_part = csv_content[1:,1:74]
     i=1
-    if GENERATE_BACKGROUND:
-        print "Annotation includes random background..."
-
+    
     for info in cvs_content_part:
         jpg_path = info[0]
         if not os.path.isfile(FILEDIR+jpg_path):
@@ -139,38 +117,9 @@ if __name__ == "__main__":
         #Read landmarks
         # for i in range(21):
         for i, j in enumerate([7,10,12,14,16,17,18,19,20]):
-            transf['l'+str(i)+'x'] = str(float(info[j*3+10]))
-            transf['l'+str(i)+'y'] = str(float(info[j*3+11]))
-            transf['l'+str(i)+'v'] = str(float(info[j*3+12]))
-
-        while GENERATE_BACKGROUND:
-            x1 = random.randint(0,width-1)
-            x2 = random.randint(0,width-1)
-            y1 = random.randint(0,height-1)
-            y2 = random.randint(0,height-1)
-
-            if x1 > x2:
-                tmp = x1
-                x1 = x2
-                x2 = tmp
-            if y1 > y2:
-                tmp = y1
-                y1 = y2
-                y2 = tmp
-            assert x1 <= x2
-            assert y1 <= y2
-            x_overlap = max(0,min(x2,xmax)-max(x1,xmin))
-            y_overlap = max(0,min(y2,ymax)-max(y1,ymin))
-            overlapArea = float(x_overlap) * float(y_overlap)
-            if x1==x2 or y1==y2:
-                continue
-            if (overlapArea/((xmax-xmin)*(ymax-ymin)) < 0.1) and (overlapArea/((x2-x1)*(y2-y1)) < 0.1):
-                if random.random() < BACKGROUND_PERCENT:
-                    transf['xmin_b'] = str(x1)
-                    transf['ymin_b'] = str(y1)
-                    transf['xmax_b'] = str(x2)
-                    transf['ymax_b'] = str(y2)
-                break
+            transf['l'+landmark_dic[str(j)]+'x'] = str(float(info[j*3+10]))
+            transf['l'+landmark_dic[str(j)]+'y'] = str(float(info[j*3+11]))
+            transf['l'+landmark_dic[str(j)]+'v'] = str(float(info[j*3+12]))
 
         if(i%10000 == 0):
             print "Create No." + str(i) + " XML...."

@@ -16,7 +16,7 @@
 r"""Convert umdfaces dataset to TFRecord for object_detection.
 
 Example usage:
-python create_umd_tf_record.py --data_dir=../../UMDFaces/VOC_format/ \
+python create_umd_tf_record.py --data_dir=../../UMDFaces/VOC_format/batch_2/ \
     --set=train --annotations_dir=Annotations --output_path=umd_train.record
 
 """
@@ -117,14 +117,14 @@ def dict_to_tf_example(data,
     xmax.append(float(obj['bndbox']['xmax']) / width)
     ymax.append(float(obj['bndbox']['ymax']) / height)
 
-    print("Annotations including landmarks...")
+    # print("Annotations including landmarks...")
     landmark = ""
     visibility = ""
     # for i in range(21):
     for i in range(9):
-      landmark += str(float(obj['landmarks']['l'+str(i)]['x']) / width)
-      landmark += " "
       landmark += str(float(obj['landmarks']['l'+str(i)]['y']) / height)
+      landmark += " "
+      landmark += str(float(obj['landmarks']['l'+str(i)]['x']) / width)
       landmark += " "
       visibility += obj['landmarks']['l'+str(i)]['vis']
       visibility += " "
